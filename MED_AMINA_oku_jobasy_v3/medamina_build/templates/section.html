@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+
+{% block title %}
+	MED_AMINA ·
+	{% if page == 'profile' %}Медициналық профиль
+	{% elif page == 'sos' %}SOS
+	{% elif page == 'medic_sos' %}SOS кезегі
+	{% elif page == 'announcements' %}Хабарландырулар
+	{% elif page == 'inventory' %}Асхана қоймасы
+	{% elif page == 'search' %}Іздеу
+	{% else %}Аккаунттар{% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+	<aside class="side-nav">
+		<a class="brand" href="{{ url_for('dashboard') }}">
+			<span class="brand-mark">M</span>
+			<span>MED_AMINA<small>Оқу платформасы</small></span>
+		</a>
+
+		<a href="{{ url_for('dashboard') }}">⌂ Басты бет</a>
+		<form action="{{ url_for('search') }}" method="get" class="side-search">
+			<input name="q" placeholder="Іздеу…" aria-label="Іздеу" required>
+			<button>Іздеу</button>
+		</form>
+		<a href="{{ url_for('announcements') }}">▤ Хабарландырулар</a>
+
+		{% if user.role in ['patient', 'inpatient'] %}
+			<a href="{{ url_for('profile') }}">♡ Медициналық профиль</a>
+			<a href="{{ url_for('sos') }}">⚠ Шұғыл SOS</a>
+		{% endif %}
+
+		{% if user.role in ['admin', 'doctor', 'nurse'] %}
+			<a href="{{ url_for('medic_sos') }}">⚑ SOS хабарламалар</a>
+		{% endif %}
+
+		{% if user.role in ['admin', 'employee', 'kitchen'] %}
+			<a href="{{ url_for('kitchen') }}">♨ Ас мәзірі</a>
+			<a href="{{ url_for('inventory') }}">▦ Асхана қоймасы</a>
+		{% endif %}
+
+		<a href="{{ url_for('cleaning') }}">✦ Тазалыққа өтінім</a>
+		{% if user.role in ['admin', 'employee', 'operating_room'] %}
+			<a href="{{ url_for('operating_rooms') }}">▦ Операциялық бөлмелер</a>
+		{% endif %}
+
+		{% if user.role == 'admin' %}
+			<a href="{{ url_for('admin_accounts') }}">♙ Аккаунттар</a>
+		{% endif %}
+
+		<a href="{{ url_for('back') }}">← Артқа</a>
+		<a href="{{ url_for('logout') }}">↪ Шығу</a>
+	</aside>
+
+	<main class="main-panel">
+		<header class="page-top">
+			<div>
+				<button class="menu-toggle" data-menu-toggle aria-label="Мәзірді жасыру">
+					☰ Мәзір
+				</button>
+				<p class="eyebrow">ОҚУ ЖОБАСЫ · DEMO</p>
+				<h1>
+					{% if page == 'profile' %}Медициналық профиль
+					{% elif page == 'sos' %}Шұғыл SOS жіберу
+					{% elif page == 'medic_sos' %}Медиктерге келген SOS
+					{% elif page == 'announcements' %}Хабарландырулар
+					{% elif page == 'inventory' %}Асхана және өнім қоймасы
+					{% elif page == 'kitchen' %}Ас мәзірі
+					{% elif page == 'cleaning' %}Тазалау тапсырмалары
+					{% elif page == 'operating_rooms' %}Операциялық бөлмелер
+					{% elif page == 'search' %}Іздеу нәтижелері
+					{% else %}Аккаунттарды басқару{% endif %}
+				</h1>
+				<p class="muted">
+					Сәлем, {{ user.full_name }}. Керек бөлімді мәзірден таңдай аласың.
+				</p>
+			</div>
+			<a class="back-link" href="{{ url_for('dashboard') }}">← Басты бетке</a>
+		</header>
+
+		{% if page == 'profile' %}
+			<section class="panel">
+				<h2>Өз мәліметтерің</h2>
+				<p class="muted">Бұл оқу демосы. Мұнда нақты медициналық деректер жазба.</p>
+				<form method="post" class="form-grid">
+					<label>
+						Қан тобы
+						<select name="blood_type">
+							<option value="">Таңда</option>
+							{% for b in ['O(I)+', 'O(I)-', 'A(II)+', 'A(II)-', 'B(III)+', 'B(III)-', 'AB(IV)+', 'AB(IV)-'] %}
+								<option value="{{ b }}" {% if profile and profile.blood_type == b %}selected{% endif %}>
+									{{ b }}
+								</option>
+							{% endfor %}
+						</select>
+					</label>
+					<label>
+						Салмақ (кг)
+						<input name="weight" type="number" min="1" max="500" step="0.1"
+									 value="{{ profile.weight if profile and profile.weight else '' }}">
+					</label>
+					<label>
+						Бой (см)
+						<input name="height" type="number" min="1" max="300" step="0.1"
+									 value="{{ profile.height if profile and profile.height else '' }}">
+					</label>
+					<label class="full-field">
+						Аллергиялар
+						<textarea name="allergies" rows="3"
+											placeholder="Мысалы: оқу дерегі — жаңғаққа аллергия">{{ profile.allergies if profile else '' }}</textarea>
+					</label>
+					<button class="primary-btn" type="submit">Сақтау</button>
+				</form>
+			</section>
+
+		{% elif page == 'sos' %}
+			<section class="panel alert-panel">
+				<h2>Орналасқан жеріңді жіберу</h2>
+				<p>
+					Батырманы басқанда браузер геолокацияға рұқсат сұрайды. Координаттар оқу
+					базасына сақталып, медиктер панелінде Google Maps сілтемесі болып көрінеді.
+				</p>
+				<p>
+					<strong>Маңызды:</strong> бұл тек демонстрация. Шынайы жедел жәрдем шақырмайды.
+					Төтенше жағдайда жергілікті жедел қызметке тікелей хабарлас.
+				</p>
+				<form id="sos-form" method="post">
+					<input type="hidden" name="latitude" id="latitude">
+					<input type="hidden" name="longitude" id="longitude">
+					<button class="sos-btn" type="button" onclick="sendSOS()">
+						⚠ Шұғыл SOS жіберу
+					</button>
+					<p id="gps-status" class="muted" aria-live="polite"></p>
+				</form>
+			</section>
+
+			<section class="panel">
+				<h2>Мен жіберген SOS</h2>
+				{% if alerts %}
+					{% for a in alerts %}
+						<div class="result-row">
+							<div>
+								<strong>{{ a.created_at }}</strong>
+								<p>{{ a.latitude }}, {{ a.longitude }}</p>
+							</div>
+							<a target="_blank" rel="noopener"
+								 href="https://www.google.com/maps?q={{ a.latitude }},{{ a.longitude }}">
+								Google Maps ашу ↗
+							</a>
+						</div>
+					{% endfor %}
+				{% else %}
+					<p class="muted">Әзірге SOS жіберілмеген.</p>
+				{% endif %}
+			</section>
+
+		{% elif page == 'medic_sos' %}
+			<section class="panel">
+				<h2>Келіп түскен хабарламалар</h2>
+				{% if alerts %}
+					{% for a in alerts %}
+						<div class="result-row">
+							<div>
+								<strong>{{ a.full_name }}</strong>
+								<p>{{ a.email }} · {{ a.created_at }}</p>
+								<p>Координат: {{ a.latitude }}, {{ a.longitude }}</p>
+							</div>
+							<a target="_blank" rel="noopener"
+								 href="https://www.google.com/maps?q={{ a.latitude }},{{ a.longitude }}">
+								Картадан көру ↗
+							</a>
+						</div>
+					{% endfor %}
+				{% else %}
+					<p class="muted">Әзірге SOS хабарламасы жоқ.</p>
+				{% endif %}
+			</section>
+
+		{% elif page == 'announcements' %}
+			{% if user.role in ['admin', 'doctor'] %}
+				<section class="panel">
+					<h2>Жаңа хабарландыру</h2>
+					<form method="post" class="form-grid">
+						<label>
+							Тақырып
+							<input name="title" required maxlength="120" placeholder="Хабарландыру тақырыбы">
+						</label>
+						<label class="full-field">
+							Мәтін
+							<textarea name="body" required rows="4" placeholder="Не айтқың келеді?"></textarea>
+						</label>
+						<button class="primary-btn">Жариялау</button>
+					</form>
+				</section>
+			{% endif %}
+
+			<section class="panel">
+				<h2>Хабарландырулар лентасы</h2>
+				{% for a in announcements %}
+					<article class="announcement-card">
+						<span class="muted">{{ a.created_at }}</span>
+						<h3>{{ a.title }}</h3>
+						<p>{{ a.body }}</p>
+					</article>
+				{% else %}
+					<p class="muted">Әзірге хабарландыру жоқ.</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'kitchen' %}
+			<section class="panel">
+				<h2>Бүгінгі / алдағы ас мәзірін қосу</h2>
+				<form method="post" class="form-grid">
+					<label>Күні<input type="date" name="menu_date" required></label>
+					<label>
+						Ас түрі
+						<select name="meal">
+							<option>Таңғы ас</option>
+							<option>Түскі ас</option>
+							<option>Кешкі ас</option>
+							<option>Тіскебасар</option>
+						</select>
+					</label>
+					<label class="full-field">
+						Қандай тамақ жасайсың?
+						<textarea name="description" rows="3" required
+											placeholder="Мысалы: көкөніс сорпасы, күріш, компот (оқу мысалы)"></textarea>
+					</label>
+					<label class="full-field">
+						Диета / аллергия ескертпесі
+						<textarea name="diet_note" rows="2"
+											placeholder="Мысалы: тұзды азайту туралы оқу ескертпесі"></textarea>
+					</label>
+					<button class="primary-btn">Мәзірді сақтау</button>
+				</form>
+				<p class="muted">Өнім саны бөлек қойма бөлімінде жаңартылады.</p>
+				<a href="{{ url_for('inventory') }}">Қоймадағы өнімдерге өту →</a>
+			</section>
+
+			<section class="panel">
+				<h2>Жарияланған мәзірлер</h2>
+				{% for m in menus %}
+					<article class="announcement-card">
+						<span class="muted">{{ m.menu_date }} · {{ m.meal }}</span>
+						<h3>{{ m.description }}</h3>
+						<p>{{ m.diet_note or 'Арнайы ескертпе жоқ' }}</p>
+					</article>
+				{% else %}
+					<p class="muted">Мәзір әзірге қосылмаған.</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'cleaning' %}
+			<section class="panel">
+				<h2>Тазалыққа өтінім жіберу</h2>
+				<p class="muted">
+					Пациент, дәрігер және кез келген қызметкер тазалау қажет жерге өтінім бере алады.
+					Бұл оқу жобасының демо бөлімі.
+				</p>
+				<form method="post" class="form-grid">
+					<label>
+						Қай жерді жинау керек?
+						<input name="area" required maxlength="160" placeholder="Мысалы: 2-қабат, 204-бөлме">
+					</label>
+					<label>Қажетті күн<input type="date" name="task_date" required></label>
+					<label>
+						Шұғылдық
+						<select name="priority">
+							<option>Қалыпты</option>
+							<option>Төмен</option>
+							<option>Шұғыл</option>
+						</select>
+					</label>
+					<label class="full-field">
+						Қосымша түсініктеме
+						<textarea name="note" rows="2" placeholder="Мысалы: еденді тазалау керек"></textarea>
+					</label>
+					<button class="primary-btn">Тазалыққа өтінім жіберу</button>
+				</form>
+			</section>
+
+			<section class="panel">
+				<h2>
+					{% if user.role in ['cleaner', 'admin'] %}
+						Тазалық тобының тапсырмалары
+					{% else %}
+						Тазалау өтінімдерінің күйі
+					{% endif %}
+				</h2>
+				<p class="muted">Жаңа → Қабылданды → Орындалып жатыр → Орындалды</p>
+				{% for t in tasks %}
+					<div class="result-row">
+						<div>
+							<strong>{{ t.area }}</strong>
+							<p>{{ t.task_date }} · Шұғылдық: {{ t.priority or 'Қалыпты' }}</p>
+							<p>
+								Өтінім берген: {{ t.requester_name or 'Ескі демо жазба' }} ·
+								Жауапты: {{ t.assigned_to or 'Әлі бекітілмеген' }}
+							</p>
+							<p>{{ t.note or 'Қосымша түсініктеме жоқ' }}</p>
+							<span class="muted">Мәртебе: {{ t.status }}</span>
+						</div>
+						<div class="task-actions">
+							{% if user.role in ['cleaner', 'admin'] and t.status != 'Орындалды' %}
+								{% if not t.assigned_to or t.assigned_to == user.full_name or user.role == 'admin' %}
+									{% if not t.assigned_to %}
+										<form method="post" action="{{ url_for('cleaning_claim', task_id=t.id) }}">
+											<button class="small-btn">Тапсырманы қабылдау</button>
+										</form>
+									{% endif %}
+									{% if t.assigned_to == user.full_name or user.role == 'admin' %}
+										<form method="post" action="{{ url_for('cleaning_status', task_id=t.id) }}">
+											<button class="small-btn" name="status" value="Орындалып жатыр">
+												Жұмыс басталды
+											</button>
+											<button class="small-btn" name="status" value="Орындалды">Аяқталды</button>
+										</form>
+									{% endif %}
+								{% endif %}
+							{% endif %}
+						</div>
+					</div>
+				{% else %}
+					<p class="muted">Әзірге өтінім жоқ. Бірінші өтінімді өзің жіберіп көр.</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'operating_rooms' %}
+			<section class="panel">
+				<h2>Операциялық бөлмені жоспарлау</h2>
+				<form method="post" class="form-grid">
+					<label>
+						Бөлме атауы
+						<input name="room_name" required placeholder="Операциялық бөлме №1">
+					</label>
+					<label>
+						Процедура атауы
+						<input name="procedure_name" placeholder="Оқу мысалы">
+					</label>
+					<label>Күні<input type="date" name="schedule_date" required></label>
+					<label>Басталу уақыты<input type="time" name="start_time" required></label>
+					<label>Аяқталу уақыты<input type="time" name="end_time" required></label>
+					<button class="primary-btn">Кестеге қосу</button>
+				</form>
+			</section>
+
+			<section class="panel">
+				<h2>Операциялық бөлмелер кестесі</h2>
+				{% for r in rooms %}
+					<div class="result-row">
+						<div>
+							<strong>{{ r.room_name }}</strong>
+							<p>
+								{{ r.schedule_date }} · {{ r.start_time }}–{{ r.end_time }} ·
+								{{ r.procedure_name or 'Процедура көрсетілмеген' }}
+							</p>
+							<span class="muted">{{ r.status }}</span>
+						</div>
+					</div>
+				{% else %}
+					<p class="muted">Кесте бос.</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'inventory' %}
+			<section class="panel">
+				<h2>Өнім қосу</h2>
+				<form method="post" class="form-grid">
+					<label>Өнім атауы<input name="item_name" required placeholder="Мысалы: күріш"></label>
+					<label>Қазіргі саны<input name="quantity" type="number" min="0" step="0.1" required></label>
+					<label>Өлшем бірлігі<input name="unit" value="кг" required></label>
+					<label>Аз қалды деген шек<input name="minimum" type="number" min="0" step="0.1" value="5"></label>
+					<button class="primary-btn">Өнімді сақтау</button>
+				</form>
+			</section>
+
+			<section class="panel">
+				<h2>Қоймадағы өнімдер</h2>
+				{% for i in items %}
+					<div class="result-row">
+						<div>
+							<strong>{{ i.item_name }}</strong>
+							<p>Қазір: {{ i.quantity }} {{ i.unit }} · Ең аз шек: {{ i.minimum }} {{ i.unit }}</p>
+							{% if i.quantity <= i.minimum %}
+								<span class="status-low">Аз қалды — толықтыру керек</span>
+							{% endif %}
+						</div>
+						<form method="post" action="{{ url_for('update_inventory', item_id=i.id) }}"
+									class="inline-form">
+							<input aria-label="Жаңа сан" name="quantity" type="number" min="0" step="0.1"
+										 value="{{ i.quantity }}" required>
+							<button class="small-btn">Санын жаңарту</button>
+						</form>
+					</div>
+				{% else %}
+					<p class="muted">Қойма бос. Өнім қосып көр.</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'search' %}
+			<section class="panel">
+				<form action="{{ url_for('search') }}" method="get" class="search-form">
+					<input name="q" value="{{ q }}" placeholder="Аты, email, хабарландыру не өнімді іздеу…" required>
+					<button class="primary-btn">Іздеу</button>
+				</form>
+				<h2>Нәтижелер</h2>
+				{% for r in results %}
+					<a class="result-row search-result" href="{{ r.href }}">
+						<div>
+							<strong>{{ r.title }}</strong>
+							<p>{{ r.detail }}</p>
+						</div>
+						<span>Ашу →</span>
+					</a>
+				{% else %}
+					<p class="muted">
+						{% if q %}Сәйкес нәтиже табылмады.{% else %}Іздеу сөзін жоғарыға жазшы.{% endif %}
+					</p>
+				{% endfor %}
+			</section>
+
+		{% elif page == 'accounts' %}
+			<section class="panel">
+				<h2>Аккаунттар</h2>
+				<p class="muted">
+					Email мекенжайлары көрінеді. Қауіпсіздік үшін құпиясөздер ашық сақталмайды және
+					көрсетілмейді. Қажет болса, жаңасын орната аласың.
+				</p>
+				{% for a in accounts %}
+					<div class="result-row account-row">
+						<div>
+							<strong>{{ a.full_name }}</strong>
+							<p>{{ a.email }}</p>
+							<p>
+								{{ role_labels.get(a.role, a.role) if role_labels is defined else a.role }} ·
+								{{ a.department or a.specialty or 'Бөлім көрсетілмеген' }} ·
+								{% if a.approved %}Белсенді{% else %}Растау күтіп тұр{% endif %}
+							</p>
+						</div>
+						<form method="post" action="{{ url_for('reset_password', user_id=a.id) }}"
+									class="reset-form">
+							<input name="new_password" type="password" minlength="8"
+										 placeholder="Жаңа құпиясөз" required>
+							<button class="small-btn">Құпиясөзді жаңарту</button>
+						</form>
+					</div>
+				{% endfor %}
+			</section>
+		{% endif %}
+	</main>
+</div>
+
+<script>
+	function sendSOS() {
+		const status = document.getElementById('gps-status');
+
+		if (!navigator.geolocation) {
+			status.textContent = 'Бұл браузер геолокацияны қолдамайды.';
+			return;
+		}
+
+		status.textContent =
+			'Орналасқан жеріңді сұрап жатырмын… Браузер рұқсат сұраса, рұқсат бер.';
+
+		navigator.geolocation.getCurrentPosition(
+			function (pos) {
+				document.getElementById('latitude').value = pos.coords.latitude;
+				document.getElementById('longitude').value = pos.coords.longitude;
+				status.textContent = 'Координат алынды. SOS демо-хабарламасын сақтап жатырмын…';
+				document.getElementById('sos-form').submit();
+			},
+			function (err) {
+				status.textContent =
+					'Геолокация алынбады. Браузер рұқсатын және HTTPS/localhost арқылы ашылғанын тексер.';
+			},
+			{ enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+		);
+	}
+</script>
+{% endblock %}

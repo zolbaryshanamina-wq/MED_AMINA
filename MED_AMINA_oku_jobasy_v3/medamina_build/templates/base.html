@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="kk">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f4f7fb">
+	<title>{% block title %}MED_AMINA{% endblock %}</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+	<style>
+		.school-demo-banner {
+			box-sizing: border-box;
+			width: min(100% - 2rem, 1100px);
+			margin: 1rem auto;
+			padding: .85rem 1.15rem;
+			border: 1px solid #efd391;
+			border-radius: 14px;
+			background: linear-gradient(135deg, #fff8e7, #fffdf8);
+			color: #624916;
+			font: 500 .92rem/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			box-shadow: 0 6px 20px rgb(86 65 24 / 7%);
+		}
+
+		.school-demo-banner strong {
+			color: #80560b;
+			letter-spacing: .035em;
+		}
+
+		.flash-wrap {
+			display: grid;
+			gap: .65rem;
+			width: min(100% - 2rem, 760px);
+			margin: 1rem auto;
+		}
+
+		.flash {
+			padding: .85rem 1rem;
+			border: 1px solid rgb(38 74 112 / 14%);
+			border-radius: 12px;
+			background: #fff;
+			color: #26354a;
+			box-shadow: 0 5px 18px rgb(27 45 71 / 7%);
+		}
+
+		@media (max-width: 600px) {
+			.school-demo-banner {
+				width: calc(100% - 1.25rem);
+				margin: .65rem auto;
+				padding: .75rem .9rem;
+				font-size: .85rem;
+			}
+
+			.flash-wrap {
+				width: calc(100% - 1.25rem);
+			}
+		}
+	</style>
+</head>
+<body class="{% if me %}app-body{% else %}public-body{% endif %}">
+	{% with messages = get_flashed_messages(with_categories=true) %}
+		{% if messages %}
+			<div class="flash-wrap" role="status" aria-live="polite">
+				{% for category, message in messages %}
+					<div class="flash {{ category }}">{{ message }}</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+	{% endwith %}
+
+	<aside class="school-demo-banner" role="note">
+		<strong>ОҚУ ЖОБАСЫ · DEMO ONLY</strong> — бұл тапсырмаға арналған симуляция.
+		Нақты аурухана емес; медициналық қызмет көрсетпейді. Тек ойдан шығарылған деректерді пайдаланыңыз.
+	</aside>
+
+	{% block body %}{% endblock %}
+
+	<script>
+		const toggle = document.querySelector('[data-menu-toggle]');
+		if (toggle) {
+			toggle.setAttribute('aria-expanded', 'true');
+			toggle.addEventListener('click', () => {
+				document.body.classList.toggle('menu-hidden');
+				toggle.setAttribute('aria-expanded', String(!document.body.classList.contains('menu-hidden')));
+			});
+		}
+
+		const availabilityUrl = "{{ url_for('appointment_availability') }}";
+		document.querySelectorAll('[data-appointment-scheduler]').forEach((form) => {
+			const appointmentType = form.querySelector('[data-appointment-type]');
+			const doctor = form.querySelector('[data-appointment-doctor]');
+			const appointmentDate = form.querySelector('[data-appointment-date]');
+			const appointmentTime = form.querySelector('[data-appointment-time]');
+			const message = form.querySelector('[data-availability-message]');
+			const doctorField = form.querySelector('[data-doctor-field]');
+			const reasonLabel = form.querySelector('[data-reason-label]');
+			const reason = form.querySelector('[name="reason"]');
+			let availabilityRequest;
+
+			const updateFields = () => {
+				const isLab = appointmentType.value === 'Зертхана';
+				if (doctorField) doctorField.hidden = isLab;
+				if (doctor) {
+					doctor.required = !isLab;
+					doctor.disabled = isLab;
+				}
+				if (reasonLabel) {
+					reasonLabel.firstChild.textContent = isLab ? 'Талдау атауы ' : 'Қысқаша себеп (міндетті емес) ';
+				}
+				if (reason) {
+					reason.required = isLab;
+					reason.placeholder = isLab ? 'Мысалы, жалпы қан талдауы' : 'Қабылдау себебі';
+				}
+			};
+
+			const loadSlots = async () => {
+				if (availabilityRequest) availabilityRequest.abort();
+				const selectedDate = appointmentDate.value;
+				const selectedType = appointmentType.value;
+				const doctorId = doctor && !doctor.disabled ? doctor.value : '';
+				appointmentTime.replaceChildren(new Option('Бос уақыт жүктелуде…', ''));
+				appointmentTime.disabled = true;
+				if (!selectedDate || (selectedType === 'Қабылдау' && !doctorId)) {
+					appointmentTime.replaceChildren(new Option('Алдымен дәрігер мен күнді таңдаңыз', ''));
+					if (message) message.textContent = 'Бос уақытты көру үшін дәрігер мен күнді таңдаңыз.';
+					return;
+				}
+
+				const params = new URLSearchParams({ date: selectedDate, type: selectedType });
+				if (doctorId) params.set('doctor_id', doctorId);
+				availabilityRequest = new AbortController();
+				try {
+					const response = await fetch(`${availabilityUrl}?${params}`, {
+						signal: availabilityRequest.signal
+					});
+					const result = await response.json();
+					if (!response.ok) throw new Error(result.error || 'Бос уақытты жүктеу мүмкін болмады.');
+					appointmentTime.replaceChildren(new Option('Уақытты таңдаңыз', ''));
+					result.slots.forEach((slot) => appointmentTime.add(new Option(slot, slot)));
+					appointmentTime.disabled = result.slots.length === 0;
+					if (message) {
+						message.textContent = result.slots.length
+							? `${result.slots.length} бос уақыт бар.`
+							: 'Бұл күнге бос уақыт жоқ. Басқа күнді таңдаңыз.';
+					}
+				} catch (error) {
+					if (error.name === 'AbortError') return;
+					appointmentTime.replaceChildren(new Option('Уақыттар жүктелмеді', ''));
+					if (message) message.textContent = error.message;
+				}
+			};
+
+			updateFields();
+			appointmentType.addEventListener('change', () => {
+				updateFields();
+				loadSlots();
+			});
+			if (doctor) doctor.addEventListener('change', loadSlots);
+			appointmentDate.addEventListener('change', loadSlots);
+		});
+	</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}
+	Қате — MED_AMINA
+{% endblock %}
+
+{% block body %}
+	<main class="narrow">
+		<h1>{{ code }}</h1>
+		<p>{{ message }}</p>
+		<a class="btn" href="{{ url_for('index') }}">Басты бетке қайту</a>
+	</main>
+{% endblock %}

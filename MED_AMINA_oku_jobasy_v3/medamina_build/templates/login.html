@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Жүйеге кіру — MED_AMINA{% endblock %}
+
+{% block body %}
+<main class="auth-layout">
+	<a class="back" href="{{ url_for('index') }}">← Басты бет</a>
+
+	<section class="auth-brand">
+		<span class="logo big">♡</span>
+		<h1>MED_AMINA</h1>
+		<p>Денсаулық — ең үлкен байлық.</p>
+		<a href="{{ url_for('about') }}">Платформа туралы →</a>
+	</section>
+
+	<section class="auth-panel">
+		<span class="eyebrow">ҚОШ КЕЛДІҢІЗ</span>
+		<h2>Жүйеге кіру</h2>
+
+		<form method="post">
+			<label>
+				Аккаунт түрі
+				<select name="account_type">
+					<option value="">Автоматты анықтау</option>
+					<option value="patient" {{ 'selected' if request.args.get('type') == 'patient' else '' }}>Пациент</option>
+					<option value="inpatient">Стационардағы пациент</option>
+					<option value="doctor" {{ 'selected' if request.args.get('type') == 'doctor' else '' }}>Дәрігер</option>
+					<option value="nurse" {{ 'selected' if request.args.get('type') == 'nurse' else '' }}>Медбике / медик</option>
+					<option value="employee" {{ 'selected' if request.args.get('type') == 'employee' else '' }}>Қызметкер</option>
+					<option value="admin">Әкімшілік</option>
+				</select>
+			</label>
+
+			<label>
+				Email
+				<input type="email" name="email" placeholder="name@example.com" required autocomplete="username">
+			</label>
+
+			<label>
+				Құпиясөз
+				<input type="password" name="password" required autocomplete="current-password">
+			</label>
+
+			<button class="btn full" type="submit">Кіру</button>
+		</form>
+
+		<p class="muted">Пациентсіз бе? <a href="{{ url_for('register') }}">Тіркелу</a></p>
+		<p class="muted">Қызметкер аккаунтын тек әкімшілік ашады.</p>
+	</section>
+</main>
+{% endblock %}

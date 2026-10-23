@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Пациент тіркеуі — MED_AMINA{% endblock %}
+
+{% block body %}
+<main class="auth-layout">
+	<a class="back" href="{{ url_for('index') }}">← Басты бет</a>
+
+	<section class="auth-brand">
+		<span class="logo big">♡</span>
+		<h1>Пациент тіркеуі</h1>
+		<p>Өзіңізге жеке аккаунт жасаңыз.</p>
+		<a href="{{ url_for('about') }}">Біз туралы →</a>
+	</section>
+
+	<section class="auth-panel">
+		<span class="eyebrow">ЖАҢА АККАУНТ</span>
+		<h2>Тіркелу</h2>
+
+		<form method="post">
+			<label>
+				Аты-жөніңіз
+				<input name="full_name" required maxlength="120" autocomplete="name">
+			</label>
+			<label>
+				Email
+				<input type="email" name="email" required autocomplete="email">
+			</label>
+			<label>
+				Құпиясөз (кемінде 8 таңба)
+				<input type="password" name="password" minlength="8" required autocomplete="new-password">
+			</label>
+			<label>
+				Пациент түрі
+				<select name="account_type">
+					<option value="patient">Амбулаториялық пациент</option>
+					<option value="inpatient">Стационардағы пациент</option>
+				</select>
+			</label>
+			<button class="btn full" type="submit">Аккаунт жасау</button>
+		</form>
+
+		<p class="muted">Қызметкерлер бұл бетте тіркеле алмайды.</p>
+		<p class="muted">Аккаунтыңыз бар ма? <a href="{{ url_for('login') }}">Кіру</a></p>
+	</section>
+</main>
+{% endblock %}

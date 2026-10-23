@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}MED_AMINA — медициналық платформа{% endblock %}
+{% block body %}
+<header class="public-nav">
+	<a class="brand" href="{{ url_for('index') }}">
+		<span class="logo">♡</span> MED_AMINA
+	</a>
+	<nav>
+		<a href="{{ url_for('index') }}">Басты бет</a>
+		<a href="{{ url_for('about') }}">Біз туралы</a>
+		<a href="{{ url_for('login') }}">Жүйеге кіру</a>
+		<a class="btn small" href="{{ url_for('register') }}">Пациент ретінде тіркелу</a>
+	</nav>
+</header>
+
+<main class="landing">
+	<section class="hero-public">
+		<div>
+			<span class="eyebrow">МЕДИЦИНАЛЫҚ БАСҚАРУ ЖҮЙЕСІ</span>
+			<h1>Денсаулыққа қамқорлық — бір платформада.</h1>
+			<p>Пациенттерге, дәрігерлерге және аурухана қызметкерлеріне арналған заманауи жұмыс кеңістігі.</p>
+			<div class="actions">
+				<a class="btn" href="{{ url_for('login') }}">Жүйеге кіру</a>
+				<a class="btn outline" href="{{ url_for('about') }}">Біз туралы</a>
+			</div>
+		</div>
+		<div class="hero-art">
+			<div class="pulse">♡</div>
+			<h3>MED_AMINA</h3>
+			<p>Денсаулық • Сенім • Қамқорлық</p>
+		</div>
+	</section>
+
+	<section class="choose">
+		<h2>Сіз платформаны қалай қолданасыз?</h2>
+		<p>Аккаунт түрін таңдаңыз. Қызметкерлердің аккаунтын әкімшілік ашады.</p>
+		<div class="role-grid">
+			<a class="role-card" href="{{ url_for('login') }}?type=patient">
+				<span>♙</span>
+				<h3>Пациент</h3>
+				<p>Қабылдауға жазылу және нәтижелерді көру</p>
+				<b>Кіру / тіркелу →</b>
+			</a>
+			<a class="role-card" href="{{ url_for('login') }}?type=doctor">
+				<span>✚</span>
+				<h3>Дәрігер</h3>
+				<p>Қабылдаулар мен пациенттерді басқару</p>
+				<b>Қызметкер кіруі →</b>
+			</a>
+			<a class="role-card" href="{{ url_for('login') }}?type=nurse">
+				<span>＋</span>
+				<h3>Медбике / медик</h3>
+				<p>Күтім және бөлім жұмысын жүргізу</p>
+				<b>Қызметкер кіруі →</b>
+			</a>
+			<a class="role-card" href="{{ url_for('login') }}?type=employee">
+				<span>⚙</span>
+				<h3>Басқа қызметкер</h3>
+				<p>Өз бөліміне арналған жұмыс беті</p>
+				<b>Қызметкер кіруі →</b>
+			</a>
+		</div>
+	</section>
+</main>
+
+<footer>© MED_AMINA · Демонстрациялық нұсқа</footer>
+{% endblock %}

@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% block title %}Жұмыс панелі — MED_AMINA{% endblock %}
+{% block body %}
+<div class="app-shell">
+	<aside class="sidebar">
+		<a class="brand side-brand" href="{{ url_for('dashboard') }}"><span class="logo">♡</span><span>MED_AMINA</span></a>
+		<div class="side-caption">ЖҰМЫС МӘЗІРІ</div>
+		<a class="side-link active" href="{{ url_for('dashboard') }}">⌂ <span>Басты бет</span></a>
+		{% if user.role == 'admin' %}
+		<a class="side-link" href="#staff">♙ <span>Қызметкерлер</span></a>
+		<a class="side-link" href="#approvals">✓ <span>Растауды күткендер</span></a>
+		<a class="side-link" href="#overview">▦ <span>Көрсеткіштер</span></a>
+		{% elif user.role in ['patient', 'inpatient'] %}
+		<a class="side-link" href="#book">▦ <span>Қабылдауға жазылу</span></a>
+		<a class="side-link" href="#my-appointments">◷ <span>Менің қабылдауларым</span></a>
+		<a class="side-link" href="#my-labs">✚ <span>Зертхана нәтижелері</span></a>
+		{% elif user.role == 'doctor' %}
+		<a class="side-link" href="#my-appointments">▦ <span>Қабылдаулар</span></a>
+		<a class="side-link" href="#my-patients">♙ <span>Пациенттер</span></a>
+		<a class="side-link" href="#add-lab">＋ <span>Талдау енгізу</span></a>
+		{% elif user.role == 'nurse' %}
+		<a class="side-link" href="#my-appointments">▦ <span>Күн тәртібі</span></a>
+		<a class="side-link" href="#add-lab">＋ <span>Зертхана жазбасы</span></a>
+		{% else %}
+		<a class="side-link" href="#work">⚙ <span>Менің бөлімім</span></a>
+		{% endif %}
+		<a class="side-link" href="{{ url_for('announcements') }}">▤ <span>Хабарландырулар</span></a>
+		<a class="side-link" href="{{ url_for('cleaning') }}">✦ <span>Тазалыққа өтінім</span></a>
+		{% if user.role in ['patient', 'inpatient'] %}
+		<a class="side-link" href="{{ url_for('profile') }}">♡ <span>Медициналық профиль</span></a>
+		<a class="side-link" href="{{ url_for('sos') }}">⚠ <span>Шұғыл SOS</span></a>
+		{% endif %}
+		{% if user.role in ['admin', 'doctor', 'nurse'] %}
+		<a class="side-link" href="{{ url_for('medic_sos') }}">⚑ <span>SOS кезегі</span></a>
+		{% endif %}
+		{% if user.role in ['admin', 'employee', 'kitchen'] %}
+		<a class="side-link" href="{{ url_for('kitchen') }}">♨ <span>Ас мәзірі</span></a>
+		<a class="side-link" href="{{ url_for('inventory') }}">▦ <span>Асхана қоймасы</span></a>
+		{% endif %}
+		{% if user.role in ['admin', 'employee', 'cleaner'] %}
+		<a class="side-link" href="{{ url_for('cleaning') }}">✦ <span>Тазалау тапсырмалары</span></a>
+		{% endif %}
+		{% if user.role in ['admin', 'employee', 'operating_room'] %}
+		<a class="side-link" href="{{ url_for('operating_rooms') }}">▦ <span>Операциялық бөлмелер</span></a>
+		{% endif %}
+		{% if user.role == 'admin' %}
+		<a class="side-link" href="{{ url_for('admin_accounts') }}">♙ <span>Аккаунттар</span></a>
+		{% endif %}
+		<a class="side-link" href="{{ url_for('about') }}">ⓘ <span>Біз туралы</span></a>
+		<a class="side-link" href="{{ url_for('logout') }}">↪ <span>Шығу</span></a>
+	</aside>
+	<main class="app-main">
+		<header class="topbar">
+			<button class="menu-toggle" data-menu-toggle aria-label="Мәзірді жасыру">☰</button>
+			<form class="top-search" action="{{ url_for('search') }}" method="get">
+				<input name="q" placeholder="Іздеу…" aria-label="Іздеу" required>
+				<button type="submit">Іздеу</button>
+			</form>
+			<div class="user-chip">
+				<span class="avatar">{{ user.full_name[:1] }}</span>
+				<span><b>{{ user.full_name }}</b><small>{{ role_labels.get(user.role, user.role) }}{% if user.specialty %} · {{ user.specialty }}{% endif %}</small></span>
+			</div>
+		</header>
+		<div class="page-wrap">
+			<section class="welcome-banner">
+				<div>
+					<span class="eyebrow">МЕДИЦИНАЛЫҚ БАСҚАРУ ЖҮЙЕСІ</span>
+					<h1>Қош келдіңіз, {{ user.full_name.split()[0] }}!</h1>
+					<p>Бұл — сіздің {{ role_labels.get(user.role, '')|lower }} жұмыс кеңістігіңіз.</p>
+				</div>
+				<div class="pulse">♡</div>
+			</section>
+
+			{% if user.role == 'admin' %}
+			<section id="overview">
+				<div class="section-heading">
+					<div><h2>Жалпы көрсеткіштер</h2><p>Жүйедегі ағымдағы мәліметтер</p></div>
+					<span class="status-dot">Демо жүйе</span>
+				</div>
+				<div class="stats">
+					{% for label, key, ico in [('Пациенттер', 'patients', '♙'), ('Дәрігерлер', 'doctors', '✚'), ('Қабылдаулар', 'appointments', '▦'), ('Зертхана жазбалары', 'labs', '⚗')] %}
+					<article class="stat"><span class="stat-icon">{{ ico }}</span><strong>{{ counts[key] }}</strong><p>{{ label }}</p></article>
+					{% endfor %}
+				</div>
+			</section>
+			<section class="panel" id="staff">
+				<h2>Қызметкер аккаунтын жасау</h2>
+				<p class="muted">Қызметкерлер өздері тіркелмейді; әкімшілік аккаунт ашады.</p>
+				<form class="form-grid" method="post" action="{{ url_for('create_worker') }}">
+					<label>Аты-жөні<input name="full_name" required></label>
+					<label>Email<input type="email" name="email" required></label>
+					<label>Бастапқы құпиясөз<input type="password" name="password" minlength="8" required></label>
+					<label>Рөлі<select name="role"><option value="doctor">Дәрігер</option><option value="nurse">Медбике / медик</option><option value="employee">Қызметкер</option><option value="kitchen">Асхана / диетолог</option><option value="cleaner">Тазалық қызметкері</option><option value="operating_room">Операциялық бөлім</option><option value="admin">Әкімшілік</option></select></label>
+					<label>Мамандығы<input name="specialty" placeholder="Мысалы, кардиолог"></label>
+					<label>Бөлім<input name="department" placeholder="Мысалы, кардиология"></label>
+					<button class="btn">Аккаунт жасау</button>
+				</form>
+			</section>
+			<section class="panel" id="approvals">
+				<h2>Растауды күткен қызметкерлер</h2>
+				{% if pending %}
+				<div class="table-scroll"><table>
+					<tr><th>Аты-жөні</th><th>Email</th><th>Рөлі</th><th>Бөлім</th><th></th></tr>
+					{% for p in pending %}
+					<tr><td>{{ p.full_name }}</td><td>{{ p.email }}</td><td>{{ role_labels.get(p.role, p.role) }}</td><td>{{ p.department or '—' }}</td><td><form method="post" action="{{ url_for('approve_worker', user_id=p.id) }}"><button class="btn small">Растау</button></form></td></tr>
+					{% endfor %}
+				</table></div>
+				{% else %}
+				<p class="empty">Қазір растауды күткен аккаунт жоқ.</p>
+				{% endif %}
+			</section>
+			<section class="panel">
+				<h2>Соңғы қабылдаулар</h2>
+				{% if appointments %}
+				<div class="table-scroll"><table>
+					<tr><th>Пациент</th><th>Дәрігер</th><th>Күні</th><th>Уақыты</th><th>Мәртебе</th></tr>
+					{% for a in appointments %}
+					<tr><td>{{ a.patient_name }}</td><td>{{ a.doctor_name or 'Тағайындалмаған' }}</td><td>{{ a.appointment_date }}</td><td>{{ a.appointment_time }}</td><td>{{ a.status }}</td></tr>
+					{% endfor %}
+				</table></div>
+				{% else %}
+				<p class="empty">Қабылдау жазбалары әзірге жоқ.</p>
+				{% endif %}
+			</section>
+
+			{% elif user.role in ['patient', 'inpatient'] %}
+			<section class="stats">
+				<article class="stat"><span class="stat-icon">▦</span><strong>{{ appointments|length }}</strong><p>Менің қабылдауларым</p></article>
+				<article class="stat"><span class="stat-icon">⚗</span><strong>{{ labs|length }}</strong><p>Зертхана жазбалары</p></article>
+			</section>
+			<section class="panel" id="book">
+				<h2>Қабылдауға немесе талдауға жазылу</h2>
+				<p class="muted">Дүйсенбі–сенбі, 07:00–19:00. Уақыттар 30 минуттық аралықпен беріледі.</p>
+				<form class="form-grid" method="post" action="{{ url_for('create_appointment') }}" data-appointment-scheduler>
+					<label>Қызмет түрі
+						<select name="appointment_type" data-appointment-type>
+							<option value="Қабылдау">Дәрігер қабылдауы</option>
+							<option value="Зертхана">Зертханалық талдау</option>
+						</select>
+					</label>
+					<label data-doctor-field>Дәрігер
+						<select name="doctor_id" data-appointment-doctor>
+							<option value="">Дәрігерді таңдаңыз</option>
+							{% for d in doctors %}<option value="{{ d.id }}">{{ d.full_name }} — {{ d.specialty or d.department or 'Маман' }}</option>{% endfor %}
+						</select>
+					</label>
+					<label>Күні<input type="date" name="appointment_date" min="{{ today }}" required data-appointment-date></label>
+					<label>Бос уақыт
+						<select name="appointment_time" required data-appointment-time disabled>
+							<option value="">Алдымен күн мен қызмет түрін таңдаңыз</option>
+						</select>
+					</label>
+					<label data-reason-label>Қысқаша себеп (міндетті емес)
+						<input name="reason" placeholder="Қабылдау себебі">
+					</label>
+					<button class="btn">Жазылу сұранысын жіберу</button>
+				</form>
+				<p class="form-help" data-availability-message role="status" aria-live="polite">Бос уақытты көру үшін дәрігер мен күнді таңдаңыз.</p>
+			</section>
+			<section class="panel" id="my-appointments">
+				<h2>Менің қабылдауларым</h2>
+				{% if appointments %}
+				<div class="table-scroll"><table>
+					<tr><th>Түрі</th><th>Күні</th><th>Уақыты</th><th>Дәрігер / талдау</th><th>Мәртебе</th><th>Әрекет</th></tr>
+					{% for a in appointments %}
+					<tr>
+						<td>{{ a.appointment_type }}</td>
+						<td>{{ a.appointment_date }}</td>
+						<td>{{ a.appointment_time }}</td>
+						<td>{{ a.doctor_name or a.reason or '—' }}{% if a.specialty %}<small>{{ a.specialty }}</small>{% endif %}</td>
+						<td>{{ a.status }}</td>
+						<td>
+							{% if a.status in ['Күтілуде', 'Расталды'] %}
+							<form class="reschedule-form" method="post" action="{{ url_for('reschedule_appointment', appointment_id=a.id) }}" data-appointment-scheduler data-reschedule>
+								<input type="hidden" name="appointment_type" value="{{ a.appointment_type }}" data-appointment-type>
+								<input type="hidden" name="doctor_id" value="{{ a.doctor_id or '' }}" data-appointment-doctor>
+								<label>Жаңа күн<input type="date" name="new_date" min="{{ today }}" required data-appointment-date></label>
+								<label>Жаңа уақыт<select name="new_time" required data-appointment-time disabled><option value="">Күнді таңдаңыз</option></select></label>
+								<button class="btn small" type="submit">Уақытты ауыстыру</button>
+								<p class="form-help" data-availability-message role="status" aria-live="polite"></p>
+							</form>
+							<form method="post" action="{{ url_for('cancel_appointment', appointment_id=a.id) }}">
+								<button class="btn small secondary" type="submit">Бас тарту</button>
+							</form>
+							{% endif %}
+						</td>
+					</tr>
+					{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Әзірге қабылдау жоқ.</p>{% endif %}
+			</section>
+			<section class="panel" id="my-labs">
+				<h2>Зертхана нәтижелері</h2>
+				{% if labs %}
+				<div class="table-scroll"><table>
+					<tr><th>Талдау</th><th>Нәтиже</th><th>Мәртебе</th><th>Күні</th></tr>
+					{% for l in labs %}<tr><td>{{ l.test_name }}</td><td>{{ l.result_text or 'Нәтиже енгізілмеген' }}</td><td>{{ l.status }}</td><td>{{ l.created_at }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Зертхана жазбалары жоқ.</p>{% endif %}
+			</section>
+
+			{% elif user.role == 'doctor' %}
+			<section class="panel" id="my-appointments">
+				<h2>Менің қабылдауларым</h2>
+				{% if appointments %}
+				<div class="table-scroll"><table>
+					<tr><th>Пациент</th><th>Күні</th><th>Уақыты</th><th>Себебі</th><th>Мәртебе</th></tr>
+					{% for a in appointments %}
+					<tr>
+						<td>{{ a.patient_name }}</td>
+						<td>{{ a.appointment_date }}</td>
+						<td>{{ a.appointment_time }}</td>
+						<td>{{ a.reason or '—' }}</td>
+						<td>
+							{{ a.status }}
+							{% if a.status in ['Күтілуде', 'Расталды'] %}
+							<form method="post" action="{{ url_for('update_appointment_status', appointment_id=a.id) }}">
+								<select name="status" aria-label="{{ a.patient_name }} қабылдауының жаңа мәртебесі">
+									<option value="Расталды">Растау</option>
+									<option value="Аяқталды">Аяқталды</option>
+									<option value="Бас тартылды">Бас тарту</option>
+								</select>
+								<button class="btn small" type="submit">Сақтау</button>
+							</form>
+							{% endif %}
+						</td>
+					</tr>
+					{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Сізге тағайындалған қабылдаулар жоқ.</p>{% endif %}
+			</section>
+			<section class="panel" id="my-patients">
+				<h2>Менің пациенттерім</h2>
+				{% if patients %}
+				<div class="table-scroll"><table>
+					<tr><th>Аты-жөні</th><th>Email</th></tr>
+					{% for p in patients %}<tr><td>{{ p.full_name }}</td><td>{{ p.email }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Пациенттер тізімі бос.</p>{% endif %}
+			</section>
+			<section class="panel" id="add-lab">
+				<h2>Зертхана жазбасын енгізу</h2>
+				<form class="form-grid" method="post" action="{{ url_for('add_lab') }}">
+					<label>Пациенттің email-і<input type="email" name="patient_email" required></label>
+					<label>Талдау атауы<input name="test_name" required></label>
+					<label>Нәтиже / түсініктеме<input name="result_text"></label>
+					<button class="btn">Сақтау</button>
+				</form>
+				<p class="notice">Нақты клиникалық шешімдерді бұл демонстрациялық формаға сүйеніп қабылдамаңыз.</p>
+			</section>
+
+			{% elif user.role == 'nurse' %}
+			<section class="stats"><article class="stat"><span class="stat-icon">▦</span><strong>{{ appointments|length }}</strong><p>Көрсетілген қабылдаулар</p></article></section>
+			<section class="panel" id="my-appointments">
+				<h2>Бөлімнің жұмыс кестесі</h2>
+				{% if appointments %}
+				<div class="table-scroll"><table>
+					<tr><th>Пациент</th><th>Дәрігер</th><th>Күні</th><th>Уақыты</th><th>Мәртебе</th></tr>
+					{% for a in appointments %}<tr><td>{{ a.patient_name }}</td><td>{{ a.doctor_name or 'Тағайындалмаған' }}</td><td>{{ a.appointment_date }}</td><td>{{ a.appointment_time }}</td><td>{{ a.status }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Жазбалар әзірге жоқ.</p>{% endif %}
+			</section>
+			<section class="panel" id="add-lab">
+				<h2>Зертхана жазбасын енгізу</h2>
+				<form class="form-grid" method="post" action="{{ url_for('add_lab') }}">
+					<label>Пациент email-і<input type="email" name="patient_email" required></label>
+					<label>Талдау атауы<input name="test_name" required></label>
+					<label>Нәтиже / түсініктеме<input name="result_text"></label>
+					<button class="btn">Сақтау</button>
+				</form>
+			</section>
+
+			{% else %}
+			<section class="panel" id="work">
+				<h2>Менің жұмыс бөлімім</h2>
+				<p>Бөлім: <b>{{ user.department or 'Әкімшілік тағайындауы қажет' }}</b></p>
+				<p>Өз жұмысыңа қатысты бөлімді төменнен аш.</p>
+				<div class="actions">
+					{% if user.role in ['kitchen', 'employee'] %}<a class="btn" href="{{ url_for('inventory') }}">Асхана қоймасы</a>{% endif %}
+					{% if user.role in ['cleaner', 'employee'] %}<a class="btn" href="#work-cleaning">Тазалау тапсырмалары</a>{% endif %}
+					{% if user.role in ['operating_room', 'employee'] %}<a class="btn" href="#work-rooms">Операциялық бөлмелер</a>{% endif %}
+				</div>
+			</section>
+			{% endif %}
+
+			<section class="panel" id="demo-medicine">
+				<h2>Дәрі жазбалары · оқу симуляциясы</h2>
+				{% if user.role in ['patient', 'inpatient'] %}
+				<h3>Дәрігер енгізген жазбалар</h3>
+				{% if demo_prescriptions %}
+				<div class="table-scroll"><table>
+					<tr><th>Дәрі атауы</th><th>Нұсқаулық</th><th>Жазған дәрігер</th></tr>
+					{% for x in demo_prescriptions %}<tr><td>{{ x.medicine_name }}</td><td>{{ x.instructions or '—' }}</td><td>{{ x.doctor_name }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Әзірге дәрі жазбасы жоқ.</p>{% endif %}
+				<h3>Дәрі туралы ұсыныс (рецепт емес)</h3>
+				<form class="form-grid" method="post" action="{{ url_for('medication_request') }}">
+					<label>Дәрі атауы<input name="medicine_name" required></label>
+					<label>Түсініктеме<input name="note"></label>
+					<button class="btn">Дәрігерге жіберу</button>
+				</form>
+				{% elif user.role == 'doctor' %}
+				<h3>Демо тағайындау жазбасы</h3>
+				<form class="form-grid" method="post" action="{{ url_for('add_prescription') }}">
+					<label>Пациент<select name="patient_id" required>{% for p in demo_patients %}<option value="{{ p.id }}">{{ p.full_name }} ({{ p.email }})</option>{% endfor %}</select></label>
+					<label>Дәрі атауы<input name="medicine_name" required></label>
+					<label>Нұсқаулық / түсініктеме<input name="instructions"></label>
+					<button class="btn">Жазбаны сақтау</button>
+				</form>
+				{% endif %}
+				{% if user.role in ['admin', 'doctor'] %}
+				<h3>Пациент ұсыныстары</h3>
+				{% if demo_requests %}
+				<div class="table-scroll"><table>
+					<tr><th>Пациент</th><th>Ұсыныс</th><th>Түсініктеме</th><th>Мәртебе</th><th>Әрекет</th></tr>
+					{% for r in demo_requests %}
+					<tr><td>{{ r.patient_name }}</td><td>{{ r.medicine_name }}</td><td>{{ r.note or '—' }}</td><td>{{ r.status }}</td><td><form method="post" action="{{ url_for('review_medication_request', req_id=r.id) }}"><button class="btn small" name="status" value="Қабылданды — дәрігер тексерді">Қаралды</button> <button class="btn small secondary" name="status" value="Қабылданбады">Қабылдамау</button></form></td></tr>
+					{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Ұсыныс жоқ.</p>{% endif %}
+				{% endif %}
+			</section>
+
+			<section class="panel" id="food">
+				<h2>Ас мәзірі және диета</h2>
+				{% if user.role in ['admin', 'employee', 'kitchen'] %}
+				<form class="form-grid" method="post" action="{{ url_for('add_menu') }}">
+					<label>Күні<input type="date" name="menu_date" required></label>
+					<label>Ас түрі<select name="meal"><option>Таңғы ас</option><option>Түскі ас</option><option>Кешкі ас</option></select></label>
+					<label>Мәзір<input name="description" required></label>
+					<label>Диета / аллерген туралы ескерту<input name="diet_note"></label>
+					<button class="btn">Мәзір қосу</button>
+				</form>
+				{% endif %}
+				{% if demo_menus %}
+				<div class="table-scroll"><table>
+					<tr><th>Күні</th><th>Ас</th><th>Мәзір</th><th>Диета ескертпесі</th></tr>
+					{% for m in demo_menus %}<tr><td>{{ m.menu_date }}</td><td>{{ m.meal }}</td><td>{{ m.description }}</td><td>{{ m.diet_note or '—' }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Мәзір әзірге енгізілмеген.</p>{% endif %}
+			</section>
+
+			{% if user.role in ['admin', 'employee', 'nurse', 'doctor', 'cleaner', 'operating_room', 'kitchen'] %}
+			<section class="panel" id="cleaning">
+				<h2>Тазалау тапсырмалары</h2>
+				{% if user.role in ['admin', 'employee', 'cleaner'] %}
+				<form class="form-grid" method="post" action="{{ url_for('add_cleaning_task') }}">
+					<label>Аймақ / бөлме<input name="area" required></label>
+					<label>Жауапты қызметкер<input name="assigned_to"></label>
+					<label>Күні<input type="date" name="task_date" required></label>
+					<label>Ескерту<input name="note"></label>
+					<button class="btn">Тапсырма қосу</button>
+				</form>
+				{% endif %}
+				{% if demo_tasks %}
+				<div class="table-scroll"><table>
+					<tr><th>Аймақ</th><th>Жауапты</th><th>Күні</th><th>Мәртебе</th><th></th></tr>
+					{% for t in demo_tasks %}
+					<tr><td>{{ t.area }}</td><td>{{ t.assigned_to or 'Тағайындалмаған' }}</td><td>{{ t.task_date }}</td><td>{{ t.status }}</td><td>{% if user.role in ['admin', 'employee'] and t.status != 'Орындалды' %}<form method="post" action="{{ url_for('complete_cleaning_task', task_id=t.id) }}"><button class="btn small">Орындалды</button></form>{% endif %}</td></tr>
+					{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Тапсырмалар жоқ.</p>{% endif %}
+			</section>
+			<section class="panel" id="operating-rooms">
+				<h2>Операциялық бөлмелер кестесі</h2>
+				{% if user.role in ['admin', 'employee', 'operating_room'] %}
+				<form class="form-grid" method="post" action="{{ url_for('add_operating_room') }}">
+					<label>Бөлме атауы<input name="room_name" required></label>
+					<label>Күні<input type="date" name="schedule_date" required></label>
+					<label>Басталуы<input type="time" name="start_time" required></label>
+					<label>Аяқталуы<input type="time" name="end_time" required></label>
+					<label>Жоспарланған процедура (демо)<input name="procedure_name"></label>
+					<button class="btn">Кестеге қосу</button>
+				</form>
+				{% endif %}
+				{% if demo_rooms %}
+				<div class="table-scroll"><table>
+					<tr><th>Бөлме</th><th>Күні</th><th>Уақыты</th><th>Процедура</th><th>Мәртебе</th></tr>
+					{% for r in demo_rooms %}<tr><td>{{ r.room_name }}</td><td>{{ r.schedule_date }}</td><td>{{ r.start_time }}–{{ r.end_time }}</td><td>{{ r.procedure_name or '—' }}</td><td>{{ r.status }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Кесте әзірге бос.</p>{% endif %}
+			</section>
+			{% endif %}
+
+			{% if user.role in ['admin', 'doctor', 'nurse'] %}
+			<section class="panel" id="ward">
+				<h2>Стационар / палата ақпараты</h2>
+				<form class="form-grid" method="post" action="{{ url_for('add_ward_note') }}">
+					<label>Стационар пациенті<select name="patient_id" required>{% for p in demo_patients %}<option value="{{ p.id }}">{{ p.full_name }}</option>{% endfor %}</select></label>
+					<label>Палата нөмірі<input name="room_number"></label>
+					<label>Диета<input name="diet" placeholder="Мысалы, демо диета"></label>
+					<label>Аллергия ескертпесі<input name="allergies"></label>
+					<label>Қосымша ескерту<input name="note"></label>
+					<button class="btn">Палата жазбасын сақтау</button>
+				</form>
+				{% if demo_wards %}
+				<div class="table-scroll"><table>
+					<tr><th>Пациент</th><th>Палата</th><th>Диета</th><th>Аллергия</th><th>Ескерту</th></tr>
+					{% for w in demo_wards %}<tr><td>{{ w.patient_name }}</td><td>{{ w.room_number or '—' }}</td><td>{{ w.diet or '—' }}</td><td>{{ w.allergies or '—' }}</td><td>{{ w.note or '—' }}</td></tr>{% endfor %}
+				</table></div>
+				{% else %}<p class="empty">Палата жазбасы жоқ. Тек стационар рөліндегі демо аккаунттар үшін.</p>{% endif %}
+			</section>
+			{% endif %}
+
+			<footer class="app-footer">MED_AMINA · Медициналық басқару платформасы · Демонстрациялық нұсқа</footer>
+		</div>
+	</main>
+</div>
+{% endblock %}
